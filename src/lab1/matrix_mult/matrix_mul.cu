@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "matrix_mul.h"
-
+#include <time.h>
 // Thread block size
 #define BLOCK_SIZE 16 
 
@@ -22,11 +22,18 @@ void Mul___(float* A, float* B, int hA, int wA, int wB, float* C)
 	float* Ad;
 	size = hA * wA * sizeof(float);
 	cudaMalloc((void**)&Ad, size);
+	clock_t tic = clock();
 	cudaMemcpy(Ad, A, size, cudaMemcpyHostToDevice);
+	clock_t tac = clock();
+	double ATime = (double)(tac-tic)/CLOCKS_PER_SEC;
+
 	float* Bd;
 	size = wA * wB * sizeof(float);
 	cudaMalloc((void**)&Bd, size);
+	tic=clock();
 	cudaMemcpy(Bd, B, size, cudaMemcpyHostToDevice);
+	tac=clock();
+	double BTime = (double)(tac-tic)/CLOCKS_PER_SEC;
 
 	// Allocate C on the device
 	float* Cd;
@@ -35,15 +42,31 @@ void Mul___(float* A, float* B, int hA, int wA, int wB, float* C)
 
 	// Compute the execution configuration assuming
 	// the matrix dimensions are multiples of BLOCK_SIZE
-	dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
-	dim3 dimGrid(wB / dimBlock.x, hA / dimBlock.y);
+	//dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
+	//dim3 dimGrid(wB / dimBlock.x, hA / dimBlock.y);
 
 	// Launch the device computation
-	Muld<<<dimGrid, dimBlock>>>(Ad, Bd, wA, wB, Cd);
+	tic=clock();
+	Muld<<<1, 1>>>(Ad, Bd, wA, wB, Cd);
+	//fuerza a que se espere a que termine el kernel ya que el lanzamiento es asincrono
+	cudaDeviceSynchronize();
+	tac=clock();
+	double KerTime = (double)(tac-tic)/CLOCKS_PER_SEC;
 
 	// Read C from the device
+	tic = clock();
 	cudaMemcpy(C, Cd, size, cudaMemcpyDeviceToHost);
+	tac = clock();
+	double CTime = (double)(tac-tic)/CLOCKS_PER_SEC;
 
+	double BWA;
+	double BWB;
+	//2*M*N*K
+	double KerPerf;
+	double BWC;
+
+
+	printf("%f;%f;%f;%f;\n",ATime,BTime,KerTime,CTime);
 	// Free device memory
 	cudaFree(Ad);
 	cudaFree(Bd);
@@ -53,6 +76,14 @@ void Mul___(float* A, float* B, int hA, int wA, int wB, float* C)
 __global__ void Muld(float* A, float* B, int wA, int wB, float* C)
 {
 	//To Do
+	for (int i = 0; i < wA; i++) {
+      for (int j = 0; j < wB; j++) {
+        //este se va
+		for (int k = 0; k < wA; k++) {
+            C[i*wB+j] += A[i*wA+k]*B[k*wB+j];
+        }
+      }
+   }
 }
 
 #if 0
