@@ -4,9 +4,11 @@
 // Thread block size
 #define BLOCK_SIZE 16 
 
+#define MULTI_THREAD
+
 // Forward declaration of the device multiplication function
 __global__ void Muld(float*, float*, int, int, float*);
-
+__global__ void MuldOp1(float*, float*, int, int, float*);
 // Host multiplication function
 // Compute C = A * B
 // hA is the height of A
@@ -42,12 +44,19 @@ void Mul___(float* A, float* B, int hA, int wA, int wB, float* C)
 
 	// Compute the execution configuration assuming
 	// the matrix dimensions are multiples of BLOCK_SIZE
-	//dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
-	//dim3 dimGrid(wB / dimBlock.x, hA / dimBlock.y);
-
+#ifdef MULTI_THREAD
+	dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
+	int sumX = (wB % dimBlock.x)==0?wB/dimBlock.x:wB/dimBlock.x+1;
+	int sumY = (hA % dimBlock.y)==0?hA/dimBlock.y:wB/dimBlock.y+1;
+	dim3 dimGrid(sumX, sumY);
+#endif
 	// Launch the device computation
 	tic=clock();
-	Muld<<<1, 1>>>(Ad, Bd, wA, wB, Cd);
+#ifndef MULTI_THREAD
+	Muld<<1,1>>(Ad, Bd, wA, wB, Cd);
+#else
+	MuldOp1<<<dimGrid, dimBlock>>>(Ad, Bd, wA, wB, Cd);
+#endif	
 	//fuerza a que se espere a que termine el kernel ya que el lanzamiento es asincrono
 	cudaDeviceSynchronize();
 	tac=clock();
@@ -73,6 +82,8 @@ void Mul___(float* A, float* B, int hA, int wA, int wB, float* C)
 	cudaFree(Cd);
 }
 
+
+#ifndef MULTI_THREAD
 __global__ void Muld(float* A, float* B, int wA, int wB, float* C)
 {
 	//To Do
@@ -85,6 +96,21 @@ __global__ void Muld(float* A, float* B, int wA, int wB, float* C)
       }
    }
 }
+#else
+__global__ void MuldOp1(float* A, float* B, int wA, int wB, float* C)
+{
+	int row = threadIdx.x+blockIdx.x*blockDim.x;
+	int col = threadIdx.y+blockIdx.y*blockDim.y;
+
+	if(col<wA&&row<wB){
+		float total =0.0;
+		for (int k = 0; k < wA; k++) {
+			total += A[row*wA+k]*B[k*wB+col];
+		}
+		C[row*wB+col] = total;
+	}
+}
+#endif
 
 #if 0
 // Device multiplication function called by Mul()
