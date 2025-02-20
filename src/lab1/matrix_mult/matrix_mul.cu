@@ -75,7 +75,9 @@ void Mul___(float* A, float* B, int hA, int wA, int wB, float* C)
 	double BWC;
 
 
-	printf("%f;%f;%f;%f;\n",ATime,BTime,KerTime,CTime);
+//printf("%f; %f; %f; %f; %f; %f; %f; %f;", Ttx1, Ttx2, Tkrnl, Ttx3, BWtx1, BWtx2, Perfkrnl, BWtx3);
+
+	printf("%f; %f; %f; %f; %f; %f; %f; %f;\n",ATime,BTime,KerTime,CTime,BWA,BWB,KerPerf,BWC);
 	// Free device memory
 	cudaFree(Ad);
 	cudaFree(Bd);
@@ -128,10 +130,10 @@ __global__ void Muld(float* A, float* B, int wA, int wB, float* C)
 	int ty = threadIdx.y;
 
 	// Index of the first sub-matrix of A processed by the block
-	int aBegin = ...;
+	int aBegin = BLOCK_SIZE * wA * by;
 
 	// Index of the last sub-matrix of A processed by the block
-	int aEnd = ...;
+	int aEnd = BLOCK_SIZE * bx;
 
 	// Step size used to iterate through the sub-matrices of A
 	int aStep = BLOCK_SIZE;
@@ -156,9 +158,9 @@ __global__ void Muld(float* A, float* B, int wA, int wB, float* C)
 		__shared__ float Bs[BLOCK_SIZE][BLOCK_SIZE];
 
 		// Load the matrices from global memory to shared memory;
-		// each thread loads one element of each matrix
-		As[ty][tx] = A[...];
-		Bs[ty][tx] = B[...];
+		// each thread loads one element of each matrixs
+		As[ty][tx] = A[a+tx];
+		Bs[ty][tx] = B[b+ty];
 		// Synchronize to make sure the matrices are loaded
 		__syncthreads();
 
@@ -166,7 +168,7 @@ __global__ void Muld(float* A, float* B, int wA, int wB, float* C)
 		// each thread computes one element
 		// of the block sub-matrix
 		for (int k = 0; k < BLOCK_SIZE; ++k)
-			....
+			C[Csub] += As[ty][tx]*Bs[ty][tx];
 
 		// Synchronize to make sure that the preceding
 		// computation is done before loading two new
