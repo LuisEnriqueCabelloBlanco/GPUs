@@ -55,7 +55,7 @@ void Mul___(float* A, float* B, int hA, int wA, int wB, float* C)
 #ifndef MULTI_THREAD
 	Muld<<1,1>>(Ad, Bd, wA, wB, Cd);
 #else
-	MuldOp1<<<dimGrid, dimBlock>>>(Ad, Bd, wA, wB, Cd);
+	Muld<<<dimGrid, dimBlock>>>(Ad, Bd, wA, wB, Cd);
 #endif	
 	//fuerza a que se espere a que termine el kernel ya que el lanzamiento es asincrono
 	cudaDeviceSynchronize();
@@ -68,11 +68,11 @@ void Mul___(float* A, float* B, int hA, int wA, int wB, float* C)
 	tac = clock();
 	double CTime = (double)(tac-tic)/CLOCKS_PER_SEC;
 
-	double BWA;
-	double BWB;
+	double BWA= (wA*hA*sizeof(float)/10e6)/ATime;
+	double BWB= (wB*hA*sizeof(float)/10e6)/BTime;
 	//2*M*N*K
-	double KerPerf;
-	double BWC;
+	double KerPerf=(2 * wA * wB)/KerTime;
+	double BWC=(wA*wB*sizeof(float)/10e6)/CTime;
 
 
 //printf("%f; %f; %f; %f; %f; %f; %f; %f;", Ttx1, Ttx2, Tkrnl, Ttx3, BWtx1, BWtx2, Perfkrnl, BWtx3);
@@ -114,7 +114,7 @@ __global__ void MuldOp1(float* A, float* B, int wA, int wB, float* C)
 }
 #endif
 
-#if 0
+#if 1
 // Device multiplication function called by Mul()
 // Compute C = A * B
 // wA is the width of A
@@ -133,7 +133,7 @@ __global__ void Muld(float* A, float* B, int wA, int wB, float* C)
 	int aBegin = BLOCK_SIZE * wA * by;
 
 	// Index of the last sub-matrix of A processed by the block
-	int aEnd = aBegin* (wA/ BLOCK_SIZE);
+	int aEnd = aBegin + wA - BLOCK_SIZE;
 
 	// Step size used to iterate through the sub-matrices of A
 	int aStep = BLOCK_SIZE;
@@ -159,25 +159,26 @@ __global__ void Muld(float* A, float* B, int wA, int wB, float* C)
 
 		// Load the matrices from global memory to shared memory;
 		// each thread loads one element of each matrixs
-		As[ty][tx] = A[a+tx];
-		Bs[ty][tx] = B[b+ty];
-		// Synchronize to make sure the matrices are loaded
+		As[tx][ty] = A[a+tx*wA+ty];
+		Bs[tx][ty] = B[b+tx*wB+ty];
+		// Synchronize to make sure the matrices are loadeds
 		__syncthreads();
 
 		// Multiply the two matrices together;
 		// each thread computes one element
 		// of the block sub-matrix
 		for (int k = 0; k < BLOCK_SIZE; ++k)
-			C[Csub] += As[ty][tx]*Bs[ty][tx];
+			Csub += As[tx][k]*Bs[k][ty];
 
 		// Synchronize to make sure that the preceding
 		// computation is done before loading two new
 		// sub-matrices of A and B in the next iteration
 		__syncthreads();
 	}
-	
+	int row = threadIdx.x+blockIdx.x*blockDim.x;
+	int col = threadIdx.y+blockIdx.y*blockDim.y;
 	// Write the block sub-matrix to global memory;
 	// each thread writes one element
-	...
+	C[col*wB+row]=Csub;
 }
 #endif
