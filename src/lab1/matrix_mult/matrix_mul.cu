@@ -71,7 +71,7 @@ void Mul___(float* A, float* B, int hA, int wA, int wB, float* C)
 	double BWA= (wA*hA*sizeof(float)/10e6)/ATime;
 	double BWB= (wB*hA*sizeof(float)/10e6)/BTime;
 	//2*M*N*K
-	double KerPerf=(2 * wA * wB)/KerTime;
+	double KerPerf=((2 *hA* wA * wB)/10e9)/KerTime;
 	double BWC=(wA*wB*sizeof(float)/10e6)/CTime;
 
 
