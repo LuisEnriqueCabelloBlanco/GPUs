@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <png_io.h>
 
 #include "routinesCPU.h"
 
@@ -265,6 +266,7 @@ void lane_assist_CPU(uint8_t *im, int height, int width,
 		1000.0f, //level
 		height, width);
 
+	write_png_fileBW("out_edges.png",imEdge,width,height);
 	/* hough transform */
 	houghtransform(imEdge, width, height, accum, accu_width, accu_height, sin_table, cos_table);
 
