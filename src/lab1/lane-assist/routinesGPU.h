@@ -13,7 +13,7 @@ __global__ void edge();
 __global__ void hyteresis_Thresholding();
 
 void canny(uint8_t *im, uint8_t *image_out,
-	float *NR, float *G, float *phi, float *Gx, float *Gy, uint8_t *pedge,
+	uint8_t *pedge,
 	float level,
 	int height, int width);
 
