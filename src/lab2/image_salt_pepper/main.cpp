@@ -260,7 +260,6 @@ int main(int argc, char **argv) {
 	// imageBE in USM
 	float *imageBW = malloc_shared<float>(width*height, Q);
 	float *imageOUT = malloc_shared<float>(width*height, Q);
-	float *window = malloc_shared<float>(MAX_WINDOW_SIZE,Q);
 	RGB2BW(imageBW, imageUCHAR, width, height);
 
 
@@ -278,7 +277,7 @@ int main(int argc, char **argv) {
 		case 'c':
 		case 'g':
 			t0 = get_time();
-			remove_noise_SYCL(Q, imageBW, imageOUT, window,
+			remove_noise_SYCL(Q, imageBW, imageOUT, 
 				0.1, 3, height, width);
 			t1 = get_time();
 			printf("SYCL Exection time %f ms.\n", t1-t0);
