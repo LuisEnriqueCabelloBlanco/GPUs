@@ -151,18 +151,21 @@ void border(float *im, float *image_out,
 	filt[3] = -1.0; filt[4] =  4.0; filt[5] = -1.0;
 	filt[6] =  0.0; filt[7] = -1.0; filt[8] =  0.0;
 
-#pragma acc ...
+#pragma acc data pcopyin(im[0:width*hight]) pcopyout(image_out[0:width*hight])
 {
 
 	t0 = get_time();
-
+	#pragma acc kernels loop independent present(im[0:width*hight]) present(image_out[0:width*hight]) collapse(2)
 	for(i=ws2; i<height-ws2; i++)
 	{
 		for(j=ws2; j<width-ws2; j++)
 		{
+			//TODO dejar bucles fijos
 			tmp = 0.0;
+			#pragma acc loop seq
 			for (ii =-ws2; ii<=ws2; ii++)
 			{
+				#pragma acc loop seq
 				for (jj =-ws2; jj<=ws2; jj++)
 					 tmp += im[(i+ii)*width + (j+jj)]*filt[(ii+ws2)*window_size + jj+ws2];
 			}

@@ -33,10 +33,13 @@ void randomizeBodies(body *data, int n) {
 }
 
 void bodyForce(body *p, float dt, int n) {
+	#pragma acc data copy(p[0:n])
+	{
 
+	#pragma acc kernels loop independent present(p[0:n])
 	for (int i = 0; i < n; i++) { 
 		float Fx = 0.0f; float Fy = 0.0f; float Fz = 0.0f;
-
+		#pragma acc loop seq
 		for (int j = 0; j < n; j++) {
 			if (i!=j) {
 				float dx = p[j].x - p[i].x;
@@ -57,9 +60,11 @@ void bodyForce(body *p, float dt, int n) {
 
 		p[i].vx += dt*Fx/p[i].m; p[i].vy += dt*Fy/p[i].m; p[i].vz += dt*Fz/p[i].m;
 	}
+	}
 }
 
 void integrate(body *p, float dt, int n){
+	#pragma acc kernels loop independent copy(p[0:n])
 	for (int i = 0 ; i < n; i++) {
 		p[i].x += p[i].vx*dt;
 		p[i].y += p[i].vy*dt;

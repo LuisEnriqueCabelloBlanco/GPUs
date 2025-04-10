@@ -273,8 +273,11 @@ void runTest( int argc, char** argv)
 	/********************/
 	/* Needleman-Wunsch */
 	/********************/
+	#pragma acc data copy(nw_matrix[0:max_cols*max_rows]) copyin(blosum62[0:24*24])
+	{
 	t0 = gettime();
 	/* Compute top-left matrix */
+	
 	for( int i = 0 ; i < max_rows-2 ; i++){
 		for( idx = 0 ; idx <= i ; idx++){
 			index = (idx + 1) * max_cols + (i + 1 - idx);
@@ -295,6 +298,7 @@ void runTest( int argc, char** argv)
 	}
 
 	/* Compute diagonals matrix */
+	#pragma acc kernels loop independent present(blosum62[0:24*24]) present(nw_matrix[0:max_cols*max_rows]) collapse(2) 
 	for( int i = max_rows-2; i < max_cols-2 ; i++){
 		for( idx = 0 ; idx <= max_rows-2; idx++){
 			index = (idx + 1) * max_cols + (i + 1 - idx);
@@ -335,6 +339,7 @@ void runTest( int argc, char** argv)
 	}
 
 	t1 = gettime();
+	}
 
 	printf("\nPerformance %f GCUPS\n", 1.0e-9*((max_rows-1)*(max_cols-1)/(t1-t0)));
 	
