@@ -18,7 +18,7 @@
 ## Transparencias
 * Todo el material está disponible en el repositorio [github](https://github.com/garsanca/GPUs/tree/main/src/lab3)
     * Puede descargarse fácilmente clonando el repositorio ejecutando en un terminal el comando ```git clone https://github.com/garsanca/GPUs```
-    * Añada a la variable de entorno PATH, la ruta del compilador de NVIDIA del [SDK-HPC](https://developer.nvidia.com/hpc-sdk): ```export PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/23.5/compilers/bin:$PATH```
+    * Añada a la variable de entorno PATH, la ruta del compilador de NVIDIA del [SDK-HPC](https://developer.nvidia.com/hpc-sdk): ```export PATH=$PATH:/opt/nvidia/hpc_sdk/Linux_x86_64/24.5/compilers/bin/```
 
 ## Laboratorios FDI
 * En los laboratorio está instalado el entorno de OpenACC soportado en NVIDIA en el [NVIDIA HPC SDK](https://developer.nvidia.com/hpc-sdk) para que pueda ser utilizado por los alumnos
@@ -28,17 +28,14 @@
 ```bash
 user@host:~/helloWorld$ make
 gcc -O3 -lm -lrt -std=c99 hello.c -o hello.host.exe
-pgcc -Minfo -fast -acc -ta=nvidia -tp=nehalem hello.c -o hello.pgi.exe
+nvc -fast -acc -gpu=managed -Minfo=accel hello.c -o hello.pgi.exe
 
+main:
+     26, Generating copyout(b[:]) [if not already present]
+     29, Loop is parallelizable
+         Generating NVIDIA GPU code
+         29, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
 
-24, Loop not fused: function call before adjacent loop
-    Generated vector sse code for the loop
-28, Generating copy(b[:])
-    Generating Tesla code
-29, Loop is parallelizable
-    Accelerator kernel generated
-    29, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
-32, Loop not vectorized/parallelized: potential early exits
 ```
 
 # Ejemplos
@@ -76,17 +73,15 @@ int main() {
     2. Para la GPU: **hello.pgi.exe**
 
 ```bash
-user@host:~/ $ make pgi
-pgcc -Minfo -fast -acc -ta=nvidia -tp=nehalem hello.c -o hello.pgi.exe
+user@host:~/ $ make gpu
+nvc -fast -acc -gpu=managed -Minfo=accel hello.c -o hello.pgi.exe
 
-24, Loop not fused: function call before adjacent loop
-    Generated vector sse code for the loop
-28, Generating copy(b[:])
-    Generating Tesla code
-29, Loop is parallelizable
-    Accelerator kernel generated
-    29, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
-32, Loop not vectorized/parallelized: potential early exits
+main:
+     26, Generating copyout(b[:]) [if not already present]
+     29, Loop is parallelizable
+         Generating NVIDIA GPU code
+         29, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
+
 ```
 ## axpy
 * En este [ejemplo](axpy/axpy.c) vamos a ilustrar el uso de las directivas para generar el kernel y el mapeo de datos

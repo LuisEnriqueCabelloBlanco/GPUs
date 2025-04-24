@@ -61,85 +61,6 @@ user@host:~/ $ sycl-ls
 
 ```
 
-
-## Cuenta en DevCloud
-* El [Intel® DevCloud for oneAPI](https://devcloud.intel.com/oneapi/) es un espacio de desarrollo **gratuito** para que la comunidad de desarrolladores puedan programar aplicaciones
-    * Múltiples **hw**: 
-        * **CPUs**: desktop *i9-11900* y servidor tipo Xeon diferentes arquitecturas (Skylake,  Ice Lake, Sapphire Rapids)
-        * **GPUs**: integradas UHD Intel® Core™ Gen9 y Gen11 
-        * **FPGAs**: Arria 10 y Stratix 10
-    * **sw**: oneAPI divididos en [Toolkits](https://www.intel.com/content/www/us/en/developer/tools/oneapi/toolkits.html#gs.pd8yyt)
-        * Compiladores: C/C++ y Fortran
-        * Herramientas de perfilado: VTune, Advisor, GDB
-        * Librerías optimizadas: oneMKL, oneDPL, oneVPL, oneDNN...
-* Solicitud de cuenta gratuita [rellenando formulario](https://www.intel.com/content/www/us/en/forms/idz/devcloud-registration.html?tgt=https://www.intel.com/content/www/us/en/secure/forms/devcloud-enrollment/account-provisioning.html)
-    * o bien en la web del [Intel® DevCloud for oneAPI](https://devcloud.intel.com/oneapi/) en la opción **Enroll**
-    * **Importante** usar correo de UCM porque tiene una duración de uso mayor
-    * Se recibirá un correo electrónico con instrucciones de uso
-
-![Imagen](figures/devcloud_enroll.png)
-
-## Conexión a DevCloud
-* Existen varios mecanismos de [conexión al Intel DevCloud](https://devcloud.intel.com/oneapi/documentation/connect-with-ssh-linux-macos/)
-
-![Imagen](figures/devcloud_connect.png)
-
-* La más sencilla es abrir un cuaderno de Jupyter
-    1. Una vez logeado en la web del [Intel® DevCloud for oneAPI](https://devcloud.intel.com/oneapi/) en la opción **Sign In** (esquina superior derecha)
-    2. Ir a la opción **"Get Started"** en la banda superior azul
-    3. Clicar sobre **"Launch JupyterLab"** en la parte inferior izquierda o en el [atajo](https://jupyter.oneapi.devcloud.intel.com/hub/login?next=/lab/tree/Welcome.ipynb?reset)
-
-![Imagen](figures/devcloud-launch_jupyperlab.png)
-
-## Entorno Jupyter
-* El [Intel® DevCloud for oneAPI] contiene un entorno JupyterLab
-
-![Imagen](figures/devcloud-jupyterlab.png)
-
-* En la parte de la izquierda tiene un navegador de ficheros del usuario
-    * Como funcionalidad útil, se pueden arrastrar fichero del equipo del *host* y automáticamente se llevan al DevCloud sin necesidad de hacer un sftp
-* En la parte de la derecha contiene las principales aplicaciones disponibles:
-    * **Notebook o cuaderno de Jupyter** que usaremos en el taller para ilustrar el funcionamiento del "Data Parallel C++"
-    * **Consola** o terminal para interactuar con el sistema
-
-## Cuadernos de Jupyter
-* Los cuadernos de Jupyter o **Notebook** están estructurados en cajas denominadas **celdas**
-    * Pueden contener celdas de texto (explicativo)
-    * También celdas de código C++ o python que se ejecutan de forma interactiva pulsando el botón **▶** o con el "atajo" *Shifth+Enter*
-    * En el navegador de fichero, el cuaderno "oneAPI_Essentials/00_Introduction_to_Jupyter/Introduction_to_Jupyter.ipynb" contiene más información y un vídeo explicativo del funcionamiento
-        * También es accesible en el [enlace](https://jupyter.oneapi.devcloud.intel.com/hub/login?next=/lab/tree/oneAPI_Essentials/00_Introduction_to_Jupyter/Introduction_to_Jupyter.ipynb?reset)
-
-* Además podéis encontrar [más info](https://eprints.ucm.es/id/eprint/48304/1/ManualJupyter.pdf)
-
-## Ejecución en terminal (sistema colas)
-* El [Intel® DevCloud for oneAPI](https://devcloud.intel.com/oneapi/) dispone de un sistema de colas para poder ejecutar las tareas
-* El lanzamiento de trabajo se realiza mediante [jobs](https://devcloud.intel.com/oneapi/documentation/job-submission/)
-* Existen dos formas de utilizar un nodo GPU: interactivo o trabajo tipo batch
-    * Para solicitar una sesión de forma interactiva con el comando qsub ```qsub -I -l nodes=1:gpu:ppn=2 -d .```
-        * ```-l nodes=1:gpu:ppn=2``` asigna un nodo completo con GPU
-        * ```-d``` indica que la sesión abierta en el nodo se realiza en el mismo directorio que el lanzamiento de qsub
-    * En un lanzamiento de tipo batch el trabajo se encola hasta que hay un slot disponible. La sintaxis es ```qsub -l nodes=1:gpu:ppn=2 -d . job.sh```
-        * Donde el script job.sh contiene la secuencia de órdenes a lanzar
-
-Un ejemplo del fichero job.sh sería el siguiente donde se muestra la hora de comienzo del job y su hora de finalización:
-```bash
-#!/bin/bash
-
-echo
-echo start: $(date "+%y%m%d.%H%M%S.%3N")
-echo
-
-# TODO list
-
-echo
-echo stop:  $(date "+%y%m%d.%H%M%S.%3N")
-echo
-```
-
-* Para conocer las colas disponibles en el Intel DevCloud se puede utilizar el comando **pbsnodes**. Con el siguiente comando se conocen las propiedades de los nodos existentes ``` pbsnodes | sort | grep properties```
-
-* Para más información relacionada con el lanzamiento de trabajos en el DevCloud se puede consultar la [documentación](https://devcloud.intel.com/oneapi/documentation/job-submission/)
-
 # Ejemplos
 
 ## helloWorld
@@ -210,6 +131,24 @@ Running on NVIDIA GeForce RTX 3070
 Hello, World!
 
 ```
+
+También se puede generar un **fat binary** con el código relativo a ambas arquitecturas (Intel y NVIDIA) añadiendo los flags para ambas arquitecturas `-fsycl-targets=nvptx64-nvidia-cuda,spir64`, y posteriormente seleccionando el tipo de dispositivo con la variable de entorno `ONEAPI_DEVICE_SELECTOR`. Para ello se puede dejar el selector genérico como `default_selector_v` y seleccionado el dispositivo target en la ejecución:
+
+```bash
+user@host:~/ $make
+icpx -fsycl -fsycl-targets=nvptx64-nvidia-cuda,spir64 -c -o main.o main.cpp -I.
+icpx -fsycl -fsycl-targets=nvptx64-nvidia-cuda,spir64 -o exec main.o -I. 
+
+user@host:~/ $ ONEAPI_DEVICE_SELECTOR=opencl:cpu ./exec 
+Running on 13th Gen Intel(R) Core(TM) i7-13700
+Hello, World!
+
+user@host:~/ $ ONEAPI_DEVICE_SELECTOR=cuda:gpu ./exec 
+Running on NVIDIA GeForce RTX 3070
+Hello, World!
+```
+
+
 ### ToDo
 * Se recomienda experimentar con el cambio de **selector** para seleccionar CPU/GPU...
 
@@ -418,6 +357,9 @@ free(c, Q);
 | Gen 9              | 7         |  8         | 168     | 1344(SIMDx8)|
 | Iris Xe Gen11      | 7         |  8         | 448     | 3584(SIMDx8)| 
 | Iris Xe-LP (Gen12) | 7         | 16         | 672     | 5376(SIMDx8)|
+| UHD 770 (Gen 13)   | 7         | 16         | 224     | 1792(SIMDx8)|
+
+
 
 ![Imagen](figures/intelGPU_arch.png)
 
@@ -503,15 +445,15 @@ free(c, Q);
 * Se puede verificar con el ejemplo **vector_add.cpp** estos aspectos.
 
 ```bash
-user@host:~/ $ ./exec 51200000
-Running on Intel(R) UHD Graphics 620 [0x5917]
-Time VectorAdd1=7061962127 usecs
-Time VectorAdd2=8620146940 usecs (num work_groups=1)
-Time VectorAdd2=4394150106 usecs (num work_groups=2)
-Time VectorAdd2=2514177313 usecs (num work_groups=4)
-Time VectorAdd2=2736493505 usecs (num work_groups=8)
-Time VectorAdd2=2951150889 usecs (num work_groups=16)
-Time VectorAdd2=2908992654 usecs (num work_groups=32)
+user@host:~/ $ ./exec 5120000
+Running on Intel(R) Graphics
+Time VectorAdd1=376838012 usecs
+Time VectorAdd2=1450740247 usecs (num work_groups=1)
+Time VectorAdd2=733601794 usecs (num work_groups=2)
+Time VectorAdd2=345888879 usecs (num work_groups=4)
+Time VectorAdd2=191530029 usecs (num work_groups=8)
+Time VectorAdd2=175651708 usecs (num work_groups=16)
+Time VectorAdd2=180759193 usecs (num work_groups=32)
 ```
 
 ### Evaluación mediante profiling con VTune
